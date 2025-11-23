@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>신비한 수학의 섬, 구구랜드!</title>
+  <style>
+    @font-face {
+      font-family: 'OngleipKonkon';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2412-1@1.0/Ownglyph_corncorn-Rg.woff2') format('woff2');
+      font-weight: normal;
+      font-display: swap;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'OngleipKonkon','Batang','Gungsuh',sans-serif;background:#fdfcf5;height:100vh;display:flex;justify-content:center;align-items:center;padding:10px;overflow:hidden; user-select: none;}
+    
+    .container{background:rgba(255,255,255,.9);border-radius:20px;padding:20px;max-width:900px;width:100%;position:relative;border:8px solid #8d6e63;outline:2px solid #5d4037;box-shadow:0 15px 40px rgba(0,0,0,.15);max-height:calc(100vh - 20px);display:flex;flex-direction:column;}
+    
+    /* 상단 버튼 */
+    .setup-header-buttons {
+        position: absolute; top: 15px; left: 20px; right: 20px;
+        display: flex; justify-content: space-between; z-index: 20; pointer-events: none;
+    }
+    .header-btn {
+        background: #8d6e63; color: #fff; border: none; padding: 8px 15px;
+        border-radius: 10px; font-size: 1em; cursor: pointer; border-bottom: 2px solid #5d4037;
+        transition: .25s; pointer-events: auto; font-family: 'OngleipKonkon';
+    }
+    .header-btn:hover{background:#5d4037}
+
+    /* 제목 스타일 */
+    h1{color:#c62828;margin:10px 0;text-align:center;font-size:1.8em;font-weight:normal;display:flex;gap:10px;justify-content:center;align-items:center}
+    h1 .title-icon { height: 1.2em; vertical-align: middle; }
+
+    .setup-screen,.game-screen,.result-screen{display:none; width:100%; height:100%;}
+    .setup-screen.active,.game-screen.active,.result-screen.active{display:flex; flex-direction:column; align-items:center;}
+
+    /* 설정 화면 */
+    .player-inputs{display:grid;grid-template-columns:1fr 1fr;gap:15px;width:100%;margin:20px 0;}
+    .player-input{background:#fdfcf5;border:2px solid #bcaaa4;border-radius:10px;padding:15px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto;gap:5px 10px}
+    .player-input label{grid-column:1/-1;font-weight:bold;color:#3e2723}
+    .player-input input[type=text]{grid-row:2;grid-column:1;width:100%;padding:10px;border:2px solid #bcaaa4;border-radius:8px;font-size:1em;}
+    .char-select-btn{grid-row:2;grid-column:2;padding:8px 12px;background:#8d6e63;color:#fff;border:none;border-radius:8px;cursor:pointer;}
+    .selected-char-name{grid-row:3;grid-column:1/-1;font-size:.8em;color:#c62828;height:1.2em;margin-top:5px}
+    
+    .btn{background:#c62828;color:#fff;border:none;padding:12px 30px;border-radius:10px;font-size:1.5em;cursor:pointer;border-bottom:4px solid #871c1c;transition:0.2s; margin-top:10px;}
+    .btn:active{transform:translateY(2px);border-bottom-width:2px;}
+    .btn-home {background:#5d4037; border-bottom-color:#3e2723;} 
+
+    /* ★ 시작 화면 꾸미기 (쉬는 캐릭터 위치 수정) ★ */
+    .setup-deco-container {
+        display: flex; 
+        justify-content: space-between; 
+        width: 100%; 
+        margin-top: 10px; 
+        padding: 0 50px; /* 버튼과 겹치지 않게 좌우 여백 */
+        pointer-events: none;
+        position: absolute; /* 위치 고정 */
+        bottom: 10px; /* 하단 배치 */
+        left: 0;
+    }
+    .setup-deco-img {
+        width:auto; height:110px; object-fit: contain; opacity: 0.95;
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        transition: transform 0.3s;
+    }
+    .setup-deco-img:hover { transform: scale(1.1) rotate(5deg); }
+
+    /* 게임 화면 */
+    .game-screen{position:relative; justify-content:center;}
+    
+    .player-box{
+        position:absolute; background:#fdfcf5; padding:10px; border-radius:15px;
+        border:3px solid #bcaaa4; width:170px; min-height:160px; 
+        display:flex; flex-direction:column; justify-content:space-between;
+        z-index:5; box-shadow:0 4px 10px rgba(0,0,0,.1); transition:0.3s;
+    }
+    .player-box.active{border-color:#c62828;background:#fff;transform:scale(1.1); z-index:10; box-shadow:0 0 15px rgba(198, 40, 40, 0.4);}
+    .player-box.timeout{opacity:.5;filter:grayscale(1);}
+    
+    .player-box .info-row { display:flex; justify-content:space-between; align-items:flex-start; z-index: 2; position: relative;}
+    .player-box .name{font-size:1.1em;font-weight:bold;color:#3e2723;}
+    .player-box .stats{font-size:0.85em;color:#5d4037; text-align: right;}
+    
+    .char-img {
+        width: 100px; height: 100px; object-fit: contain;
+        align-self: center; margin-top: -10px; margin-bottom: 5px;
+        transition: transform 0.2s;
+    }
+
+    #player-box-1{top:0;left:0;}
+    #player-box-2{bottom:0;left:0;}
+    #player-box-3{bottom:0;right:0;}
+    #player-box-4{top:0;right:0;}
+    #player-box-3 .char-img, #player-box-4 .char-img { transform: scaleX(-1); }
+
+    .problem-area{background:#fff;padding:20px;border-radius:20px;border:3px solid #8d6e63;text-align:center;width:400px;z-index:2; display:flex; flex-direction:column; align-items:center; box-shadow: 0 10px 20px rgba(0,0,0,0.1);}
+    .problem{font-size:60px;font-weight:bold;color:#3e2723;margin:10px 0;font-family:'Batang', serif;}
+    
+    #answerInput input{
+        width: 150px; height: 60px; font-size: 40px; text-align: center;
+        border: 3px solid #c62828; border-radius: 15px; background: #fff8e1;
+        outline: none; color: #333;
+    }
+    
+    .feedback{font-size:1.3em;height:35px;margin:5px 0;font-weight:bold; display:flex; gap:10px; justify-content:center; align-items:center;}
+    .feedback.correct{color:#2e7d32;}
+    .feedback.wrong{color:#c62828;}
+    
+    .bonus-badge {
+        font-size: 0.7em; padding: 2px 6px; border-radius: 8px; color:white;
+        display:inline-block; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-left:3px;
+    }
+    .bg-speed { background: #ff9800; }
+    .bg-combo { background: #9c27b0; }
+    .bg-char { background: #e91e63; }
+
+    @keyframes pop { 0%{transform:scale(0);} 100%{transform:scale(1);} }
+
+    .numpad {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+        margin-top: 15px; width: 100%; max-width: 280px;
+    }
+    .num-btn {
+        background: #f5f5f5; border: 2px solid #bcaaa4; border-radius: 10px;
+        font-size: 24px; padding: 10px 0; cursor: pointer; color: #5d4037;
+        font-family: 'OngleipKonkon'; transition: 0.1s;
+    }
+    .num-btn:active { background: #d7ccc8; transform: scale(0.95); }
+    .num-btn.submit { background: #c62828; color: white; border-color: #a52727; }
+    .num-btn.clear { background: #ffcc80; border-color: #ffa726; }
+
+    /* 연필 애니메이션 */
+    #turn-indicator {
+        position: absolute; width: 60px; height: 60px; top: 50%; left: 50%;
+        transform: translate(-50%, -50%); z-index: 20;
+        transition: top 0.5s ease, left 0.5s ease; pointer-events: none;
+    }
+    .pencil-container { width: 100%; height: 100%; transition: transform 0.5s ease; }
+    .pencil-img { width: 100%; filter: drop-shadow(3px 3px 3px rgba(0,0,0,0.3)); }
+    @keyframes wiggle { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+    #turn-indicator.active .pencil-img { animation: wiggle 0.5s ease-in-out infinite; }
+
+    /* 모달 공통 */
+    .modal-overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,0.6);z-index:1000;}
+    .modal-content{background:#fdfcf5;padding:20px;border-radius:15px;max-width:650px;width:95%;border:5px solid #8d6e63;text-align:center;position:relative; max-height:85vh; overflow-y:auto;}
+    .modal-close-btn { position:absolute; top:10px; right:15px; font-size:1.5em; cursor:pointer; color:#8d6e63; z-index:30;}
+    
+    /* 캐릭터 선택 그리드 */
+    .char-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+    .char-item { 
+        border: 2px solid #bcaaa4; border-radius: 10px; padding: 5px; cursor: pointer; 
+        background: #fff; transition: 0.2s; display:flex; flex-direction:column; align-items:center;
+    }
+    .char-item:hover { border-color: #c62828; transform: scale(1.05); background:#fff8e1; }
+    .char-item img { width: 80px; height: 80px; object-fit: contain; }
+    .char-item span { font-weight: bold; color: #5d4037; font-size: 0.9em; margin-top: 5px; }
+
+    /* 캐릭터 상세 보기 화면 */
+    .char-detail-view { display: none; flex-direction: column; align-items: center; margin-top: 10px; }
+    .char-detail-content { display: flex; gap: 20px; width: 100%; text-align: left; align-items: flex-start; margin-bottom: 20px; }
+    .char-detail-left { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .char-detail-img-lg { width: 180px; height: 180px; object-fit: contain; border-radius: 15px; border: 3px solid #bcaaa4; background: #fff; margin-bottom: 10px;}
+    .char-detail-name { font-size: 1.8em; font-weight: bold; color: #c62828; margin-bottom: 5px; }
+    .char-detail-right { flex: 1.5; background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #bcaaa4; font-size: 1em; line-height: 1.6; color: #3e2723; max-height: 250px; overflow-y: auto; }
+    .char-detail-buttons { display: flex; gap: 10px; justify-content: center; width: 100%; }
+    .btn-back { background: #7f8c8d; border-bottom-color: #546e7a; }
+    .btn-select { background: #2e7d32; border-bottom-color: #1b5e20; }
+
+    @media (max-width: 600px) {
+        .char-detail-content { flex-direction: column; align-items: center; }
+        .char-detail-right { width: 100%; }
+        .char-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* 솜씨 자랑 테이블 */
+    .hof-table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .hof-table th { border-bottom:2px solid #8d6e63; padding:8px; color:#c62828; position:sticky; top:0; background:#fdfcf5;}
+    .hof-table td { border-bottom:1px solid #ddd; padding:8px; }
+    .hof-rank { font-weight:bold; color:#5d4037; }
+    
+    /* ★ 솜씨 자랑 모달 하단 여백 확보 (글씨 가림 방지) ★ */
+    #hofModal .modal-content { padding-bottom: 80px; }
+
+    /* ★ 솜씨 자랑 구석 캐릭터 크기 60px로 축소 ★ */
+    .rest-img-deco {
+        position: absolute; 
+        bottom: 5px; 
+        right: 5px; 
+        width: 60px; /* 크기 수정됨 */
+        opacity: 1; 
+        pointer-events: none;
+        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="setup-header-buttons">
+      <button class="header-btn" onclick="openHelpModal()">게임 설명</button>
+      <button class="header-btn" onclick="openHofModal()">✨ 반짝반짝 솜씨 자랑</button>
+    </div>
+
+    <!-- 타이틀 -->
+    <h1>
+        <img src="https://i.imgur.com/GlDUsUr.png" class="title-icon" alt="아이콘" style="margin-right:10px;">
+        신비한 수학의 섬, 구구랜드!
+        <img src="https://i.imgur.com/GlDUsUr.png" class="title-icon" alt="아이콘" style="margin-left:10px; transform:scaleX(-1);">
+    </h1>
+
+    <!-- 1. 설정 화면 -->
+    <div class="setup-screen active">
+      <div class="player-inputs">
+        <div class="player-input">
+          <label>1P (왼쪽 위)</label>
+          <input type="text" id="player1" placeholder="이름" />
+          <button class="char-select-btn" onclick="openCharModal(1)">파트너 선택</button>
+          <div class="selected-char-name" id="player1-char-name"></div>
+          <input type="hidden" id="player1-char" value="2단" /> 
+        </div>
+        <div class="player-input">
+          <label>4P (오른쪽 위)</label>
+          <input type="text" id="player4" placeholder="이름" />
+          <button class="char-select-btn" onclick="openCharModal(4)">파트너 선택</button>
+          <div class="selected-char-name" id="player4-char-name"></div>
+          <input type="hidden" id="player4-char" value="5단" />
+        </div>
+        <div class="player-input">
+          <label>2P (왼쪽 아래)</label>
+          <input type="text" id="player2" placeholder="이름" />
+          <button class="char-select-btn" onclick="openCharModal(2)">파트너 선택</button>
+          <div class="selected-char-name" id="player2-char-name"></div>
+          <input type="hidden" id="player2-char" value="3단" />
+        </div>
+        <div class="player-input">
+          <label>3P (오른쪽 아래)</label>
+          <input type="text" id="player3" placeholder="이름" />
+          <button class="char-select-btn" onclick="openCharModal(3)">파트너 선택</button>
+          <div class="selected-char-name" id="player3-char-name"></div>
+          <input type="hidden" id="player3-char" value="4단" />
+        </div>
+      </div>
+      <div id="setupError" style="color:red;display:none;margin-bottom:10px;font-weight:bold;"></div>
+      
+      <!-- 버튼을 감싸는 부분이 있으면 좋지만, 현재 구조상 바로 버튼 -->
+      <button class="btn" onclick="startGame()">게임 시작!</button>
+
+      <!-- ★ 시작 화면 꾸미기 (랜덤 캐릭터 공간) ★ -->
+      <div class="setup-deco-container" id="setupDeco">
+          <!-- JS로 랜덤 이미지 삽입됨 -->
+      </div>
+    </div>
+
+    <!-- 2. 게임 화면 -->
+    <div class="game-screen">
+      <div id="player-box-1" class="player-box" style="display:none"></div>
+      <div id="player-box-2" class="player-box" style="display:none"></div>
+      <div id="player-box-3" class="player-box" style="display:none"></div>
+      <div id="player-box-4" class="player-box" style="display:none"></div>
+
+      <div id="turn-indicator">
+          <div class="pencil-container">
+            <img src="https://i.imgur.com/hoFn8n7.png" class="pencil-img" alt="연필">
+          </div>
+      </div>
+
+      <div class="problem-area">
+        <div class="problem" id="problemDisplay">2 × 2 = ?</div>
+        <div class="feedback" id="feedback"></div>
+        <div id="answerInput">
+             <input type="number" id="answerNum" placeholder="?" readonly />
+        </div>
+        <div class="numpad">
+            <button class="num-btn" onclick="pressKey(7)">7</button>
+            <button class="num-btn" onclick="pressKey(8)">8</button>
+            <button class="num-btn" onclick="pressKey(9)">9</button>
+            <button class="num-btn" onclick="pressKey(4)">4</button>
+            <button class="num-btn" onclick="pressKey(5)">5</button>
+            <button class="num-btn" onclick="pressKey(6)">6</button>
+            <button class="num-btn" onclick="pressKey(1)">1</button>
+            <button class="num-btn" onclick="pressKey(2)">2</button>
+            <button class="num-btn" onclick="pressKey(3)">3</button>
+            <button class="num-btn clear" onclick="pressKey('C')">지움</button>
+            <button class="num-btn" onclick="pressKey(0)">0</button>
+            <button class="num-btn submit" onclick="checkAnswer()">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 결과 화면 -->
+    <div class="result-screen">
+        <h2 style="color:#c62828; font-size:2em; margin-bottom:20px;">🎊 게임 종료! 🎊</h2>
+        <div id="final-chart" style="width:100%; height:320px; display:flex; justify-content:center; align-items:flex-end; gap:20px;"></div>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button class="btn btn-home" onclick="location.reload()">처음으로</button>
+            <button class="btn" onclick="restartGame()">다시 하기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 캐릭터 선택 모달 -->
+<div id="characterModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close-btn" onclick="closeCharModal()">&times;</span>
+        <h2 id="charModalTitle">파트너를 선택하세요</h2>
+        <div id="charGrid" class="char-grid"></div>
+        <div id="charDetailView" class="char-detail-view">
+            <div class="char-detail-content">
+                <div class="char-detail-left">
+                    <img id="detailImg" src="" class="char-detail-img-lg" />
+                    <div id="detailName" class="char-detail-name"></div>
+                </div>
+                <div id="detailDesc" class="char-detail-right"></div>
+            </div>
+            <div class="char-detail-buttons">
+                <button class="btn btn-back" onclick="showGrid()">뒤로</button>
+                <button class="btn btn-select" onclick="confirmSelection()">이 파트너 결정!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 도움말 모달 -->
+<div id="helpModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close-btn" onclick="closeHelpModal()">&times;</span>
+        <h2>게임 설명</h2>
+        <ul style="text-align:left; padding-left:20px; line-height:1.6;">
+            <li>자기 턴이 오면 구구단 문제를 푸세요.</li>
+            <li>제한 시간은 <b>2분 (120초)</b> 입니다.</li>
+            <li>정답이면 기본 <b>+10점</b>!</li>
+            <li><b>5초 안에</b> 풀면 <b>+5점</b> (속도 보너스)</li>
+            <li><b>3연속 정답</b>부터는 <b>+5점</b> (정확도 보너스)</li>
+            <li><b>내 캐릭터와 같은 단</b> 문제를 맞히면 <b>+1점</b> (파트너 보너스)</li>
+            <li>점수가 가장 높은 친구가 <b>솜씨 왕</b>이 됩니다!</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ✨ 반짝반짝 솜씨 자랑 모달 -->
+<div id="hofModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close-btn" onclick="closeHofModal()">&times;</span>
+        <h2>✨ 반짝반짝 솜씨 자랑 (TOP 10)</h2>
+        <table class="hof-table">
+            <thead>
+                <tr>
+                    <th width="15%">순위</th>
+                    <th width="35%">이름</th>
+                    <th width="25%">점수</th>
+                    <th width="25%">파트너</th>
+                </tr>
+            </thead>
+            <tbody id="hofList"></tbody>
+        </table>
+        <div id="hofRestImgContainer"></div>
+    </div>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzN_aewFQ2nntc08_3DWVabOidlfYJ-O0CHKmF62vipYYKJqCNgXcBMI031dVl33gjt/exec";
+
+    // === 캐릭터 데이터 ===
+    const charData = {
+        '2단': {
+            name: '두리',
+            desc: "서울백운초등학교 2학년이야! 수학 학원에 가다가 신기한 구멍에 빠졌어. 그 곳은 숫자를 먹고 자라는 신비한 생물들의 섬, 구구랜드였어! 구구단을 배운지 얼마 안되서 2단 밖에 할 줄 몰라. 신발, 장갑... 짝이 맞는 것이 나에겐 가장 중요해!",
+            default: 'https://i.imgur.com/GlDUsUr.png',
+            correct: 'https://i.imgur.com/KK2QcQE.png',
+            comboCorrect: 'https://i.imgur.com/NU045uQ.png',
+            wrong: 'https://i.imgur.com/tFRjQ1Z.png',
+            comboWrong: 'https://i.imgur.com/pY2AL4a.png',
+            win: 'https://i.imgur.com/geuGwVB.png',
+            lose: 'https://i.imgur.com/UcGdTXm.png',
+            rest: 'https://i.imgur.com/B63Mb8l.png'
+        },
+        '3단': {
+            name: '삼삼이',
+            desc: "반가워! 난 '세모 숲'을 지키는 마법사야. 내 지팡이를 세 번(3) 흔들면 맛있는 도토리가 뿅! 하고 나타나지. 난 뭐든지 삼각형으로 만드는 걸 좋아해. 샌드위치도 세모, 김밥도 세모가 제일 맛있거든!",
+            default: 'https://i.imgur.com/LonvsYI.png',
+            correct: 'https://i.imgur.com/dbY3pe2.png',
+            comboCorrect: 'https://i.imgur.com/mmZaZlC.png',
+            wrong: 'https://i.imgur.com/OOtFK3M.png',
+            comboWrong: 'https://i.imgur.com/GKmb1es.png',
+            win: 'https://i.imgur.com/MjnJNbS.png',
+            lose: 'https://i.imgur.com/gpo8CCC.png',
+            rest: 'https://i.imgur.com/q0EKOQl.png'
+        },
+        '4단': {
+            name: '네모봇',
+            desc: "삐-익. 시스템 가동. 저는 '반듯반듯 공장'에서 만들어진 로봇, 네모봇입니다. 네모난 물건을 찾으러 다니고 있어요. 삐리삐리... 네모인 물건을 갖고 계신가요? 그럼 저와 친구가 될 수 있습니다.",
+            default: 'https://i.imgur.com/2RrOu6e.png',
+            correct: 'https://i.imgur.com/XOvmE3L.png',
+            comboCorrect: 'https://i.imgur.com/yeDXnhH.png',
+            wrong: 'https://i.imgur.com/DLVTQ2h.png',
+            comboWrong: 'https://i.imgur.com/YUy1X3G.png',
+            win: 'https://i.imgur.com/Qzh7hXz.png',
+            lose: 'https://i.imgur.com/DuLXmNZ.png',
+            rest: 'https://i.imgur.com/ZxIBE5D.png'
+        },
+        '5단': {
+            name: '오징',
+            desc: "우주 저 멀리 '별 다섯 개 행성'에서 UFO를 타고 왔어! 난 시계 보는 걸 아주 좋아해. 5분, 10분, 15분... 긴 바늘이 5칸씩 움직일 때마다 심장이 두근거려. 나랑 신나게 손바닥을 부딪혀 보자!",
+            default: 'https://i.imgur.com/4hKhhMU.png',
+            correct: 'https://i.imgur.com/pBWilZp.png',
+            comboCorrect: 'https://i.imgur.com/kDyeOIC.png',
+            wrong: 'https://i.imgur.com/kRKDvi1.png',
+            comboWrong: 'https://i.imgur.com/PnLT0F0.png',
+            win: 'https://i.imgur.com/IIHjQDU.png',
+            lose: 'https://i.imgur.com/gdYvI2H.png',
+            rest: 'https://i.imgur.com/AzleGIa.png'
+        },
+        '6단': {
+            name: '단이',
+            desc: "달콤한 냄새가 나지 않니? 난 '설탕 과자 언덕'에 사는 파티셰야. 내 머리 위의 6모양 촛불은 기분이 좋으면 활활 타올라! 피자도, 케이크도, 사과도 딱 6조각으로 똑같이 나누는 게 나의 특기지. 나와 같이 달콤한 구구단 파티를 해보지 않을래?",
+            default: 'https://i.imgur.com/0ATkbkG.png',
+            correct: 'https://i.imgur.com/dDcLLth.png',
+            comboCorrect: 'https://i.imgur.com/RkUCs9Y.png',
+            wrong: 'https://i.imgur.com/vlBhrIY.png',
+            comboWrong: 'https://i.imgur.com/iNmWiqS.png',
+            win: 'https://i.imgur.com/IlLmMwP.png',
+            lose: 'https://i.imgur.com/cPoVG4P.png',
+            rest: 'https://i.imgur.com/ArSK2Gl.png'
+        },
+        '7단': {
+            name: '칠롱이',
+            desc: "안녕~ 난 '무지개 구름 위'에 사는 기린이란다. 내 목은 행운의 숫자 7을 닮아서 휘어있어. 덕분에 높은 곳에 있는 일곱 빛깔 잎사귀를 따 먹을 수 있지. 7단이 어렵다고? 걱정 마. 내 긴 목을 쭉 뻗어서 저 멀리 숨겨진 정답을 찾아줄게!",
+            default: 'https://i.imgur.com/KqRY8Ms.png',
+            correct: 'https://i.imgur.com/qpZPBCI.png',
+            comboCorrect: 'https://i.imgur.com/YmsFXk8.png',
+            wrong: 'https://i.imgur.com/t9GdsDr.png',
+            comboWrong: 'https://i.imgur.com/ldOioE6.png',
+            win: 'https://i.imgur.com/qSvz3hT.png',
+            lose: 'https://i.imgur.com/DAvxj9X.png',
+            rest: 'https://i.imgur.com/V4jb4p2.png'
+        },
+        '8단': {
+            name: '퍼시 선생님',
+            desc: "'깊은 바다 교실'의 주인, 퍼시 선생님이다. 내 8개의 다리가 보이느냐? 이 다리들로 칠판도 닦고, 채점도 하고, 조는 아이들을 깨우기도 하지. 8단은 숫자가 쑥쑥 커져서 겁먹는 친구들이 많더구나. 하지만 끝없이 늘어나는 내 다리 처럼 끈기를 가진다면 너도 수학 마법사가 될 수 있을 게다. 자, 수업 시작이다!",
+            default: 'https://i.imgur.com/mrOi789.png',
+            correct: 'https://i.imgur.com/hwA66B8.png',
+            comboCorrect: 'https://i.imgur.com/8HqYQ2f.png',
+            wrong: 'https://i.imgur.com/fNostsh.png',
+            comboWrong: 'https://i.imgur.com/aSN1d5a.png',
+            win: 'https://i.imgur.com/JHFT2Ye.png',
+            lose: 'https://i.imgur.com/NeoyZ6e.png',
+            rest: 'https://i.imgur.com/WXDEzKP.png'
+        },
+        '9단': {
+            name: '구구',
+            desc: "영차, 영차... 안녕? 난 '마지막 잎새'에 사는 애벌레야. 몸이 여러 마디라서 걷는 게 좀 느려. 구구단을 끝까지 다 외우면, 내 등 뒤의 껍질을 벗고 멋진 나비가 될 거라는 전설이 있대. 너도 포기하지 말고 나랑 끝까지 함께해 줄래?",
+            default: 'https://i.imgur.com/A6cuv2e.png',
+            correct: 'https://i.imgur.com/eJFosRk.png',
+            comboCorrect: 'https://i.imgur.com/U5LlyBm.png',
+            wrong: 'https://i.imgur.com/v4sxnZQ.png',
+            comboWrong: 'https://i.imgur.com/mTkn9e7.png',
+            win: 'https://i.imgur.com/NMR3Z1y.png',
+            lose: 'https://i.imgur.com/nDETxyO.png',
+            rest: 'https://i.imgur.com/ko4Fgi9.png'
+        }
+    };
+
+    let players = [];
+    let currentPlayerIndex = 0;
+    const TOTAL_TIME = 120;
+    let timerInterval;
+    let currentProblem = {};
+    let problemStartTime = 0;
+    let currentPlayerSelecting = 1;
+    let selectedCharKey = ''; 
+
+    // === DOMContentLoaded 시 시작 화면 꾸미기 ===
+    document.addEventListener('DOMContentLoaded', () => {
+        renderSetupDeco();
+    });
+
+    function renderSetupDeco() {
+        const container = document.getElementById('setupDeco');
+        if(!container) return;
+        container.innerHTML = '';
+
+        // 랜덤 2명 뽑기 (서로 다른)
+        let n1 = Math.floor(Math.random() * 8) + 2; // 2~9
+        let n2 = Math.floor(Math.random() * 8) + 2;
+        while(n1 === n2) {
+            n2 = Math.floor(Math.random() * 8) + 2;
+        }
+
+        const c1 = charData[`${n1}단`];
+        const c2 = charData[`${n2}단`];
+
+        // 좌측
+        const img1 = document.createElement('img');
+        img1.src = c1.rest;
+        img1.className = 'setup-deco-img';
+        img1.style.transform = 'scaleX(1)'; // 왼쪽 친구는 오른쪽 보기(기본)
+
+        // 우측
+        const img2 = document.createElement('img');
+        img2.src = c2.rest;
+        img2.className = 'setup-deco-img';
+        img2.style.transform = 'scaleX(-1)'; // 오른쪽 친구는 왼쪽 보기
+
+        container.appendChild(img1);
+        container.appendChild(img2);
+    }
+
+    function startGame() {
+        players = [];
+        const inputs = [1, 2, 3, 4];
+        let validCount = 0;
+
+        inputs.forEach(id => {
+            const nameEl = document.getElementById(`player${id}`);
+            const charEl = document.getElementById(`player${id}-char`);
+            const name = nameEl.value.trim();
+            const charKey = charEl.value || '2단';
+
+            if (name) {
+                players.push({
+                    id: id, name: name, character: charKey,
+                    score: 0, timeLeft: TOTAL_TIME, active: true,
+                    consecutiveCorrect: 0, consecutiveWrong: 0,
+                    actionState: 'default'
+                });
+                validCount++;
+            }
+        });
+
+        if (validCount < 1) {
+            const err = document.getElementById('setupError');
+            err.textContent = "최소 1명의 친구가 필요해요!";
+            err.style.display = "block";
+            return;
+        }
+
+        document.querySelector('.setup-screen').classList.remove('active');
+        document.querySelector('.game-screen').classList.add('active');
+        
+        players.forEach(p => {
+            const box = document.getElementById(`player-box-${p.id}`);
+            box.style.display = 'flex';
+            updatePlayerBox(p);
+        });
+        startRound();
+    }
+
+    function restartGame(){
+        players.forEach(p => {
+            p.score = 0; p.timeLeft = TOTAL_TIME; p.active = true;
+            p.consecutiveCorrect = 0; p.consecutiveWrong = 0;
+            p.actionState = 'default';
+        });
+        document.querySelector('.result-screen').classList.remove('active');
+        document.querySelector('.game-screen').classList.add('active');
+        
+        players.forEach(p => {
+            const box = document.getElementById(`player-box-${p.id}`);
+            box.classList.remove('timeout');
+            updatePlayerBox(p);
+        });
+        currentPlayerIndex = 0;
+        startRound();
+        renderSetupDeco(); // 다시 시작할 때도 데코 갱신
+    }
+
+    function startRound() {
+        const activePlayers = players.filter(p => p.active);
+        if (activePlayers.length === 0) { endGame(); return; }
+
+        let loopCount = 0;
+        while (!players[currentPlayerIndex].active) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            loopCount++;
+            if(loopCount > players.length) { endGame(); return; }
+        }
+
+        const currPlayer = players[currentPlayerIndex];
+        
+        updateTurnIndicator(currPlayer.id);
+        document.getElementById('turn-indicator').classList.add('active');
+
+        players.forEach(p => document.getElementById(`player-box-${p.id}`).classList.remove('active'));
+        document.getElementById(`player-box-${currPlayer.id}`).classList.add('active');
+
+        generateProblem(currPlayer);
+        problemStartTime = Date.now();
+        
+        const inputEl = document.getElementById('answerNum');
+        inputEl.value = '';
+        inputEl.focus();
+        document.getElementById('feedback').innerHTML = '';
+
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (currPlayer.timeLeft > 0) {
+                currPlayer.timeLeft--;
+                updatePlayerBox(currPlayer);
+            } else {
+                currPlayer.active = false;
+                document.getElementById('feedback').textContent = "⏰ 시간 끝! 종료!";
+                document.getElementById(`player-box-${currPlayer.id}`).classList.add('timeout');
+                document.getElementById('turn-indicator').classList.remove('active');
+                clearInterval(timerInterval);
+                setTimeout(nextTurn, 1500);
+            }
+        }, 1000);
+    }
+
+    function nextTurn() {
+        const prevPlayer = players[currentPlayerIndex];
+        if(prevPlayer) {
+             prevPlayer.actionState = 'default';
+             updatePlayerBox(prevPlayer);
+        }
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        startRound();
+    }
+
+    function generateProblem(player) {
+        let dan, num;
+        if (player.consecutiveWrong >= 3) {
+            const easyDans = [2, 5];
+            dan = easyDans[Math.floor(Math.random() * easyDans.length)];
+            num = Math.floor(Math.random() * 9) + 1;
+            document.getElementById('feedback').innerHTML = "<span style='color:green; font-size:0.8em;'>💪 힘내! 쉬운 문제!</span>";
+        } else if (player.consecutiveCorrect >= 3) {
+            dan = Math.floor(Math.random() * 4) + 6; 
+            num = Math.floor(Math.random() * 7) + 3;
+            document.getElementById('feedback').innerHTML = "<span style='color:blue; font-size:0.8em;'>🔥 도전! 어려운 문제!</span>";
+        } else {
+            dan = Math.floor(Math.random() * 8) + 2;
+            num = Math.floor(Math.random() * 9) + 1;
+        }
+        currentProblem = { dan: dan, num: num, answer: dan * num };
+        document.getElementById('problemDisplay').textContent = `${dan} × ${num} = ?`;
+    }
+
+    function checkAnswer() {
+        const inputEl = document.getElementById('answerNum');
+        const userVal = parseInt(inputEl.value);
+        if (isNaN(userVal)) return; 
+
+        clearInterval(timerInterval);
+        document.getElementById('turn-indicator').classList.remove('active');
+
+        const player = players[currentPlayerIndex];
+        const feedbackEl = document.getElementById('feedback');
+        const timeSpent = (Date.now() - problemStartTime) / 1000;
+
+        if (userVal === currentProblem.answer) {
+            const BASE_SCORE = 10;
+            const SPEED_BONUS = 5;
+            const COMBO_BONUS = 5;
+            const CHAR_BONUS = 1; 
+
+            let earnedScore = BASE_SCORE;
+            let bonusBadges = "";
+
+            if (timeSpent <= 5.0) {
+                earnedScore += SPEED_BONUS;
+                bonusBadges += `<span class="bonus-badge bg-speed">⚡속도왕 (+${SPEED_BONUS})</span>`;
+            }
+            if (player.consecutiveCorrect >= 2) { 
+                earnedScore += COMBO_BONUS;
+                bonusBadges += `<span class="bonus-badge bg-combo">🔥연속정답 (+${COMBO_BONUS})</span>`;
+            }
+            const playerDan = parseInt(player.character); 
+            if (playerDan === currentProblem.dan) {
+                earnedScore += CHAR_BONUS;
+                bonusBadges += `<span class="bonus-badge bg-char">✨파트너 보너스 (+${CHAR_BONUS})</span>`;
+            }
+            
+            player.score += earnedScore;
+            player.consecutiveCorrect++;
+            player.consecutiveWrong = 0;
+            player.actionState = (player.consecutiveCorrect >= 3) ? 'comboCorrect' : 'correct';
+
+            feedbackEl.innerHTML = `<span style='color:#2e7d32'>⭕ 정답! (+${BASE_SCORE})</span> ${bonusBadges}`;
+            feedbackEl.className = "feedback correct";
+        } else {
+            player.consecutiveCorrect = 0;
+            player.consecutiveWrong++;
+            player.actionState = (player.consecutiveWrong >= 3) ? 'comboWrong' : 'wrong';
+            feedbackEl.innerHTML = `❌ 땡! 정답은 ${currentProblem.answer} 입니다.`;
+            feedbackEl.className = "feedback wrong";
+        }
+        updatePlayerBox(player);
+        setTimeout(nextTurn, 1500);
+    }
+
+    function updatePlayerBox(p) {
+        const box = document.getElementById(`player-box-${p.id}`);
+        const min = Math.floor(p.timeLeft / 60);
+        const sec = String(p.timeLeft % 60).padStart(2, '0');
+        
+        const charSet = charData[p.character] || charData['2단']; 
+        const imgSrc = charSet[p.actionState] || charSet['default'];
+
+        box.innerHTML = `
+            <div class="info-row">
+                <div class="name">${p.name}</div>
+                <div class="stats">
+                    ${p.score}점<br>
+                    ${min}:${sec}<br>
+                    (연속: ${p.consecutiveCorrect})
+                </div>
+            </div>
+            <img class="char-img" src="${imgSrc}" alt="${p.character}">
+        `;
+        if(!p.active) box.classList.add('timeout');
+    }
+
+    function updateTurnIndicator(playerId) {
+        const ind = document.getElementById('turn-indicator');
+        const container = ind.querySelector('.pencil-container');
+        const positions = {
+            1: { top: '20%', left: '20%' }, 2: { top: '80%', left: '20%' },
+            3: { top: '80%', left: '80%' }, 4: { top: '20%', left: '80%' }
+        };
+        const rotations = { 1: '45deg', 2: '-45deg', 3: '-135deg', 4: '135deg' };
+        if(positions[playerId]) { ind.style.top = positions[playerId].top; ind.style.left = positions[playerId].left; }
+        if(rotations[playerId]) { container.style.transform = `rotate(${rotations[playerId]})`; }
+    }
+
+    function pressKey(key) {
+        const el = document.getElementById('answerNum');
+        if (key === 'C') el.value = '';
+        else if (el.value.length < 3) el.value += key;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (!document.querySelector('.game-screen').classList.contains('active')) return;
+        if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+        else if (e.key === 'Backspace') { const el=document.getElementById('answerNum'); el.value=el.value.slice(0,-1); }
+        else if (e.key === 'Enter') checkAnswer();
+    });
+
+    const charModal = document.getElementById('characterModal');
+    const helpModal = document.getElementById('helpModal');
+    const hofModal = document.getElementById('hofModal');
+
+    function openCharModal(n) { 
+        currentPlayerSelecting = n; 
+        const grid = document.getElementById('charGrid');
+        grid.innerHTML = '';
+        
+        for(let i=2; i<=9; i++) {
+            const key = `${i}단`;
+            const div = document.createElement('div');
+            div.className = 'char-item';
+            div.onclick = () => showCharDetail(key);
+            
+            const img = document.createElement('img');
+            img.src = charData[key].default;
+            
+            const span = document.createElement('span');
+            span.textContent = key;
+            
+            div.appendChild(img);
+            div.appendChild(span);
+            grid.appendChild(div);
+        }
+        
+        showGrid();
+        charModal.style.display = 'flex'; 
+    }
+    
+    function closeCharModal() { charModal.style.display = 'none'; }
+    
+    function showGrid() {
+        document.getElementById('charModalTitle').textContent = "파트너를 선택하세요";
+        document.getElementById('charGrid').style.display = 'grid';
+        document.getElementById('charDetailView').style.display = 'none';
+    }
+
+    function showCharDetail(key) {
+        selectedCharKey = key;
+        const data = charData[key];
+        
+        document.getElementById('charModalTitle').textContent = "이 친구랑 할까요?";
+        document.getElementById('charGrid').style.display = 'none';
+        document.getElementById('charDetailView').style.display = 'flex';
+        
+        document.getElementById('detailImg').src = data.default;
+        document.getElementById('detailName').textContent = `${data.name} (${key})`;
+        document.getElementById('detailDesc').textContent = data.desc;
+    }
+
+    function confirmSelection() {
+        const name = selectedCharKey;
+        document.getElementById(`player${currentPlayerSelecting}-char`).value = name;
+        const charName = charData[name].name;
+        document.getElementById(`player${currentPlayerSelecting}-char-name`).textContent = `파트너: ${charName}`;
+        closeCharModal();
+    }
+
+    function openHelpModal() { helpModal.style.display = 'flex'; }
+    function closeHelpModal() { helpModal.style.display = 'none'; }
+
+    // === 솜씨 자랑 (데이터 연동) 관련 로직 ===
+    async function fetchHallOfFame() {
+        const tbody = document.getElementById('hofList');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#5d4037;">불러오는 중... ✨</td></tr>';
+        
+        const restContainer = document.getElementById('hofRestImgContainer');
+        const randDan = Math.floor(Math.random()*8) + 2; 
+        const restSrc = charData[`${randDan}단`].rest;
+        restContainer.innerHTML = `<img src="${restSrc}" class="rest-img-deco" alt="휴식">`;
+
+        try {
+            const res = await fetch(SCRIPT_URL);
+            const json = await res.json();
+            renderHofTable(json.data);
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#c62828;">기록을 가져오지 못했어요.</td></tr>';
+        }
+    }
+
+    // ★ 솜씨 자랑 테이블에 캐릭터 이름 매핑 로직 추가 ★
+    function renderHofTable(list) {
+        const tbody = document.getElementById('hofList');
+        tbody.innerHTML = '';
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">아직 등록된 솜씨가 없어요!</td></tr>';
+            return;
+        }
+        list.forEach((item, index) => {
+            let rankDisplay = index + 1;
+            if (index === 0) rankDisplay = '🥇';
+            else if (index === 1) rankDisplay = '🥈';
+            else if (index === 2) rankDisplay = '🥉';
+            
+            // 저장된 '2단' 같은 키를 실제 이름 '두리'로 변환
+            const charKey = item.character;
+            const charName = (charData[charKey]) ? charData[charKey].name : charKey;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="hof-rank">${rankDisplay}</td><td>${item.name}</td><td style="color:#c62828; font-weight:bold;">${item.score}</td><td>${charName}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function saveScore(name, score, character) {
+        if (!name) return;
+        fetch(SCRIPT_URL, {
+            method: 'POST', mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ name, score, character })
+        }).catch(console.error);
+    }
+
+    function openHofModal() {
+        if (!hofModal) return;
+        fetchHallOfFame();
+        hofModal.style.display = 'flex';
+    }
+    function closeHofModal() { hofModal.style.display = 'none'; }
+
+    function endGame() {
+        document.querySelector('.game-screen').classList.remove('active');
+        document.querySelector('.result-screen').classList.add('active');
+        
+        const sorted = [...players].sort((a,b) => b.score - a.score);
+        sorted.forEach(p => {
+            if(p.score > 0) saveScore(p.name, p.score, p.character);
+        });
+
+        const chart = document.getElementById('final-chart');
+        chart.innerHTML = '';
+        
+        sorted.forEach((p, idx) => {
+            let poseSrc = charData[p.character].default;
+            if(idx === 0) poseSrc = charData[p.character].win; 
+            else if(idx === sorted.length - 1 && sorted.length > 1) poseSrc = charData[p.character].lose;
+
+            const bar = document.createElement('div');
+            const height = Math.min(p.score * 5 + 40, 240);
+            
+            let imgSize = 120;                 
+            if (idx === 0) imgSize = 200;      
+            else if (idx === 1) imgSize = 170; 
+            else if (idx === 2) imgSize = 150; 
+
+            bar.style.cssText = `
+                width: ${imgSize}px; height: ${height}px; 
+                background: ${idx===0 ? '#fdd835' : '#e0e0e0'};
+                border-radius: 10px 10px 0 0;
+                text-align: center; position: relative;
+                font-weight: bold; padding-top: 10px;
+                animation: grow 1s ease-out;
+                display:flex; flex-direction:column; justify-content:flex-end; align-items:center;
+                min-width: 100px; 
+                margin: 0 5px;
+            `;
+            
+            bar.innerHTML = `
+                <img src="${poseSrc}" style="width:${imgSize}px; height:${imgSize}px; object-fit:contain; margin-bottom:5px; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.1));">
+                <div style="margin-bottom:5px; font-size:${idx===0 ? '1.2em' : '1em'}">${p.score}점</div>
+                <span style="position:absolute; bottom:-30px; left:50%; transform:translateX(-50%); width:120%; color:#333; white-space:nowrap; font-size:0.9em;">${p.name}</span>
+            `;
+            chart.appendChild(bar);
+        });
+    }
+</script>
+</body>
+</html>
