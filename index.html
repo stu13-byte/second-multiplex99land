@@ -643,23 +643,58 @@
     }
 
     function generateProblem(player) {
-        let dan, num;
-        if (player.consecutiveWrong >= 3) {
-            const easyDans = [2, 5];
-            dan = easyDans[Math.floor(Math.random() * easyDans.length)];
-            num = Math.floor(Math.random() * 9) + 1;
-            document.getElementById('feedback').innerHTML = "<span style='color:green; font-size:0.8em;'>💪 힘내! 쉬운 문제!</span>";
-        } else if (player.consecutiveCorrect >= 3) {
-            dan = Math.floor(Math.random() * 4) + 6; 
-            num = Math.floor(Math.random() * 7) + 3;
-            document.getElementById('feedback').innerHTML = "<span style='color:blue; font-size:0.8em;'>🔥 도전! 어려운 문제!</span>";
-        } else {
-            dan = Math.floor(Math.random() * 8) + 2;
-            num = Math.floor(Math.random() * 9) + 1;
+            // 1. 단(Dan) 그룹 정의
+            const easyDans = [2, 3, 4, 5]; // 비교적 쉬운 단
+            const hardDans = [6, 7, 8, 9]; // 비교적 어려운 단
+    
+            // 2. '어려운 단'이 나올 기본 확률 (0.5 = 50%)
+            let hardChance = 0.5;
+    
+            // 3. 연속 정답 수에 따라 어려운 확률 증가 (개당 10%씩, 최대 90%)
+            if (player.consecutiveCorrect > 0) {
+                hardChance += (player.consecutiveCorrect * 0.1);
+                if (hardChance > 0.9) hardChance = 0.9; // 최대 90%로 제한 (10%는 쉬운거 나옴)
+            }
+    
+            // 4. 연속 오답 수에 따라 어려운 확률 감소 (개당 15%씩, 최소 10%)
+            if (player.consecutiveWrong > 0) {
+                hardChance -= (player.consecutiveWrong * 0.15);
+                if (hardChance < 0.1) hardChance = 0.1; // 최소 10%는 유지 (90%는 쉬운거 나옴)
+            }
+    
+            // 5. 확률 주사위 굴리기 (0 ~ 1 사이의 난수)
+            const luckyDice = Math.random();
+            let selectedDan;
+    
+            // 피드백 문구 초기화
+            const feedbackEl = document.getElementById('feedback');
+            feedbackEl.innerHTML = "";
+    
+            if (luckyDice < hardChance) {
+                // [어려운 단 당첨!]
+                selectedDan = hardDans[Math.floor(Math.random() * hardDans.length)];
+                
+                // 3연속 이상 정답자에게만 '도전' 메시지 보여주기
+                if (player.consecutiveCorrect >= 3) {
+                    feedbackEl.innerHTML = "<span style='color:blue; font-size:0.8em;'>🔥 도전! 어려운 문제!</span>";
+                }
+            } else {
+                // [쉬운 단 당첨!]
+                selectedDan = easyDans[Math.floor(Math.random() * easyDans.length)];
+    
+                // 3연속 이상 오답자에게만 '힘내' 메시지 보여주기
+                if (player.consecutiveWrong >= 3) {
+                    feedbackEl.innerHTML = "<span style='color:green; font-size:0.8em;'>💪 힘내! 쉬운 문제!</span>";
+                }
+            }
+    
+            // 6. 곱해지는 수 (1~9) 랜덤
+            const num = Math.floor(Math.random() * 9) + 1;
+    
+            // 7. 문제 출제
+            currentProblem = { dan: selectedDan, num: num, answer: selectedDan * num };
+            document.getElementById('problemDisplay').textContent = `${selectedDan} × ${num} = ?`;
         }
-        currentProblem = { dan: dan, num: num, answer: dan * num };
-        document.getElementById('problemDisplay').textContent = `${dan} × ${num} = ?`;
-    }
 
     function checkAnswer() {
         const inputEl = document.getElementById('answerNum');
@@ -931,3 +966,4 @@
 </body>
 
 </html>
+
