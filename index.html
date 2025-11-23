@@ -469,7 +469,31 @@
     let problemStartTime = 0;
     let currentPlayerSelecting = 1;
     let selectedCharKey = ''; 
+// ★ 이미지 프리로딩 함수 (새로 추가할 부분) ★
+    function preloadImages() {
+        const imagesToLoad = [];
+        
+        // 1. 캐릭터 이미지 수집
+        Object.values(charData).forEach(char => {
+            Object.values(char).forEach(val => {
+                if(typeof val === 'string' && val.startsWith('http')) {
+                    imagesToLoad.push(val);
+                }
+            });
+        });
 
+        // 2. 기타 UI 이미지 수집 (연필, 타이틀 아이콘)
+        imagesToLoad.push('https://i.imgur.com/hoFn8n7.png'); 
+        imagesToLoad.push('https://i.imgur.com/GlDUsUr.png'); 
+
+        // 3. 브라우저가 미리 다운로드하게 만들기
+        imagesToLoad.forEach(url => {
+            const img = new Image();
+            img.src = url;
+        });
+        console.log("이미지 미리 불러오기 완료!");
+    }
+  
     // === DOMContentLoaded 시 시작 화면 꾸미기 ===
     document.addEventListener('DOMContentLoaded', () => {
         renderSetupDeco();
@@ -905,4 +929,5 @@
     }
 </script>
 </body>
+
 </html>
